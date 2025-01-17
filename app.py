@@ -174,7 +174,7 @@ if uploaded_file:
 
     # Run prediction
     try:
-        predictions = predict_main(image_path, threshold=0.1, verbose=False)
+        predictions = predict_main(image_path, threshold=0.05, verbose=False)
 
         result_folder = "output_result"
         base_name = os.path.splitext(uploaded_file.name)[0]
