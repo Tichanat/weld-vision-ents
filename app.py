@@ -209,9 +209,10 @@ if uploaded_file:
                     confidence = item.get("score", 0)
 
                     confidence_color = (
-                        "#03DAC6" if confidence >= 0.70
-                        else "#FBC02D" if confidence >= 0.5
-                        else "#CF6679"
+                        "#FF0000" if confidence < 0.10 else  # Red
+                        "#FFA500" if 0.10 <= confidence < 0.30 else  # Orange
+                        "#FFFF00" if 0.30 <= confidence < 0.50 else  # Yellow
+                        "#00FF00"  # Green
                     )
 
                     st.markdown(
