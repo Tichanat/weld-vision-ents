@@ -175,27 +175,34 @@ def predict(model, image_tensor, grey_confidence_threshold, white_confidence_thr
     logging.info(f"Generated {len(raw_results)} predictions above the threshold {threshold}.")
     return raw_results,json_serializable_result
 
-def visualize_predictions_img(image_path, prediction, class_to_idx,result_folder, threshold=0.5 ):
+def visualize_predictions_img(image_path, prediction, class_to_idx, result_folder, threshold=0.5):
     # Create a reverse dictionary to map indices to class names
     idx_to_class = {v: k for k, v in class_to_idx.items()}
-    
+
     img = cv2.imread(image_path)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    boxes = [ i['box'] for i in prediction ]
-    scores = [ i['score'] for i in prediction ]
-    labels = [ i['label'] for i in prediction ]
-    
-    for box, score, label in zip(boxes, scores, labels):
+    boxes = [i['box'] for i in prediction]
+    scores = [i['score'] for i in prediction]
+
+    for box, score in zip(boxes, scores):
         if score > threshold:
-            class_name = idx_to_class[label]
-            cv2.rectangle(img, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (255, 0, 0), 2)
-            cv2.putText(img, f'{class_name}: {score:.2f}', (int(box[0]), int(box[1]) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
-    
-    
-    filename = f"{os.path.basename(image_path).split('.')[0]}_bbox.jpg"   
-    save_path = os.path.join(result_folder,filename)
-    
+            # Determine the color of the bounding box based on confidence levels
+            if score < 0.1:
+                color = (255, 0, 0)  # Red
+            elif 0.1 <= score < 0.3:
+                color = (255, 165, 0)  # Orange
+            elif 0.3 <= score < 0.5:
+                color = (255, 255, 0)  # Yellow
+            else:
+                color = (0, 255, 0)  # Green
+
+            # Draw the bounding box without any text
+            cv2.rectangle(img, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), color, 2)
+
+    filename = f"{os.path.basename(image_path).split('.')[0]}_bbox.jpg"
+    save_path = os.path.join(result_folder, filename)
+
     # Convert the image back to BGR before saving with OpenCV
     img_bgr = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     cv2.imwrite(save_path, img_bgr)
