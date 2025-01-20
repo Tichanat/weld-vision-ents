@@ -163,74 +163,77 @@ st.markdown(
 
 # File Upload Section
 st.markdown('<div id="file-uploader"></div>', unsafe_allow_html=True)
-uploaded_file = st.file_uploader(
-    "Upload a Weld Image (JPG, JPEG, PNG)", type=["jpg", "jpeg", "png"]
+uploaded_files = st.file_uploader(
+    "Upload Weld Images (JPG, JPEG, PNG)", type=["jpg", "jpeg", "png"], accept_multiple_files=True
 )
 
-if uploaded_file:
-    image_path = os.path.join("temp", uploaded_file.name)
-    with open(image_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
+if uploaded_files:
+    for uploaded_file in uploaded_files:
+        # Save each uploaded file temporarily
+        image_path = os.path.join("temp", uploaded_file.name)
+        with open(image_path, "wb") as f:
+            f.write(uploaded_file.getbuffer())
 
-    # Run prediction
-    try:
-        predictions = predict_main(image_path, threshold=0.05, verbose=False)
+        # Run prediction for each file
+        try:
+            predictions = predict_main(image_path, threshold=0.05, verbose=False)
 
-        result_folder = "output_result"
-        base_name = os.path.splitext(uploaded_file.name)[0]
-        result_image_path = os.path.join(result_folder, f"{base_name}_bbox.jpg")
-        result_json_path = os.path.join(result_folder, f"r_{base_name}.json")
+            result_folder = "output_result"
+            base_name = os.path.splitext(uploaded_file.name)[0]
+            result_image_path = os.path.join(result_folder, f"{base_name}_bbox.jpg")
+            result_json_path = os.path.join(result_folder, f"r_{base_name}.json")
 
-        if os.path.exists(result_image_path):
-            # Centered heading for detection results
-            st.markdown(
-                "<div style='text-align:center; margin-top:80px;'><h2 style='font-size:2.5rem; font-weight:bold; margin-bottom:50px; color:#E0E0E0;'>Detection Result</h2></div>",
-                unsafe_allow_html=True,
-            )
+            if os.path.exists(result_image_path):
+                # Centered heading for detection results
+                st.markdown(
+                    f"<div style='text-align:center; margin-top:80px;'><h2 style='font-size:2.5rem; font-weight:bold; margin-bottom:50px; color:#E0E0E0;'>Detection Result: {uploaded_file.name}</h2></div>",
+                    unsafe_allow_html=True,
+                )
 
-            # Display images side-by-side
-            col1, col2 = st.columns(2, gap="large")
-            with col1:
-                original_image = Image.open(uploaded_file)
-                st.image(original_image, caption="Original Image", use_container_width=True)
+                # Display images side-by-side
+                col1, col2 = st.columns(2, gap="large")
+                with col1:
+                    original_image = Image.open(uploaded_file)
+                    st.image(original_image, caption="Original Image", use_container_width=True)
 
-            with col2:
-                result_image = Image.open(result_image_path)
-                st.image(result_image, caption="Processed Image with Bounding Boxes", use_container_width=True)
+                with col2:
+                    result_image = Image.open(result_image_path)
+                    st.image(result_image, caption="Processed Image with Bounding Boxes", use_container_width=True)
 
-            # Display Detection Summary
-            if os.path.exists(result_json_path):
-                with open(result_json_path, "r") as f:
-                    prediction_data = json.load(f)
+                # Display Detection Summary
+                if os.path.exists(result_json_path):
+                    with open(result_json_path, "r") as f:
+                        prediction_data = json.load(f)
 
-                st.markdown("<h3>Detection Summary</h3>", unsafe_allow_html=True)
-                for item in prediction_data:
-                    class_name = item.get("class", "N/A")
-                    confidence = item.get("score", 0)
+                    st.markdown("<h3>Detection Summary</h3>", unsafe_allow_html=True)
+                    for item in prediction_data:
+                        class_name = item.get("class", "N/A")
+                        confidence = item.get("score", 0)
 
-                    confidence_color = (
-                        "#FF0000" if confidence < 0.10 else  # Red
-                        "#FFA500" if 0.10 <= confidence < 0.30 else  # Orange
-                        "#FFFF00" if 0.30 <= confidence < 0.50 else  # Yellow
-                        "#00FF00"  # Green
-                    )
+                        # Apply the same confidence level logic for colors
+                        confidence_color = (
+                            "#FF0000" if confidence < 0.10 else  # Red
+                            "#FFA500" if 0.10 <= confidence < 0.30 else  # Orange
+                            "#FFFF00" if 0.30 <= confidence < 0.50 else  # Yellow
+                            "#00FF00"  # Green
+                        )
 
-                    st.markdown(
-                        f"""
-                        <div class='results-card'>
-                            <h3>Prediction:</h3>
-                            <p><strong>Class:</strong> {class_name}</p>
-                            <p><strong>Confidence:</strong> <span style="color: {confidence_color};">{confidence * 100:.2f}%</span></p>
-                        </div>
-                        """,
-                        unsafe_allow_html=True,
-                    )
+                        st.markdown(
+                            f"""
+                            <div class='results-card'>
+                                <h3>Prediction:</h3>
+                                <p><strong>Class:</strong> {class_name}</p>
+                                <p><strong>Confidence:</strong> <span style="color: {confidence_color};">{confidence * 100:.2f}%</span></p>
+                            </div>
+                            """,
+                            unsafe_allow_html=True,
+                        )
+                else:
+                    st.warning("Prediction details not found.")
             else:
-                st.warning("Prediction details not found.")
-        else:
-            st.error("Processed image not found.")
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
+                st.error(f"Processed image not found for {uploaded_file.name}.")
+        except Exception as e:
+            st.error(f"An error occurred with file {uploaded_file.name}: {e}")
 
 # Footer Section
 st.markdown(
